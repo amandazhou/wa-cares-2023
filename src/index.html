@@ -20,22 +20,21 @@
       <!-- content goes here -->
       <div id="inputs">
         <div class="age">
-          When 2022 starts, I will be <input type="number" id="age" value=35> years old
+          When 2022 starts, I will be age <span id="age">35</span>
+          <div id="slider"></div>
         </div>
         <div class="retire">
-          I am planning to retire at <input type="number" id="retire" value=66> years old
+          I am planning to retire at age <span id="retire">66</span>
+          <div id="sliderRetire"></div>
         </div>
         <div class="salary">
-          I make a gross annual salary of $<input type="number" id="salary" value=50000>
-          <div>Which would set my yearly tax at $<span id="yrTax">290.00</span></div>
+          I make a gross annual salary of $<span id="salary">50,000</span>
+          <div id="sliderSalary"></div>
+
+          <div class="output">Which would set my yearly tax at $<span id="yrTax">290.00</span>, with a total life time expenditure of $<span id="lifeTax">8,990.00</span></div>
         </div>
       </div>
 
-      <button class="go">
-        Calculate
-      </button>
-
-      <!-- <input type="number" id="buttonXlim" value=9> -->
 
       <div id="my_dataviz"></div>
 

@@ -1,11 +1,57 @@
 @import "seattletimes";
 
 .interactive {
-  max-width: 700px;
+  max-width: 1000px;
   margin: auto;
+  font-size: 0px;
+
+  #inputs {
+    vertical-align: top;
+    display: inline-block;
+    width: 50%;
+    font-size: 17px;
+
+    @media @mobile {
+      width: 100%;
+      display: block;
+    }
+
+    .axis text,
+    .slider text {
+      font-size: 16px;
+    }
+
+    span {
+      font-weight: bold;
+    }
+
+    .output {
+      background-color: #eee;
+      margin-top: 2em;
+      padding: 10px;
+    }
+  }
 
   #my_dataviz {
-    width: 100%;
-    height: 600px;
+    display: inline-block;
+    width: 50%;
+    @media @mobile {
+      width: 100%;
+      display: block;
+    }
+
+    .yAxis {
+      text {
+        font-size: 12px;
+      }
+    }
+
+    .xAxis {
+      text {
+        font-size: 13px;
+        font-weight: bold;
+      }
+    }
+    // height: 450px;
   }
 }
