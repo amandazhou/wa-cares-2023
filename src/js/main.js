@@ -86,6 +86,7 @@ const taxRate = 0.0058;
 var max = 40000;
 var did_y_change = 40000;
 const benefit2025 = 36500;
+const inflation = 1.01;
 
 
 
@@ -136,15 +137,17 @@ const svg = d3.select("#my_dataviz")
     .call(d3.axisLeft(y).tickFormat( d3.format("$,d") ) );
 
 
+      // Benefits //
+      svg.append('g')
+      .attr("class", "benefitLine")
+      .append("rect")
+      .attr("x", x("State benefit"))
+      .attr("width", x.bandwidth())
+      .attr("y", y(benefit2025))
+      .attr("height", function(d) { return height - y(benefit2025); })
+      .style('fill', '#99d8c9');
 
-    svg.append('g')
-    .attr("class", "benefitLine")
-    .append("rect")
-    .attr("x", x("State benefit"))
-    .attr("width", x.bandwidth())
-    .attr("y", y(benefit2025))
-    .attr("height", function(d) { return height - y(benefit2025); })
-    .style('fill', '#99d8c9');
+
 
 
   // Lifetime tax cost //
@@ -161,12 +164,32 @@ const svg = d3.select("#my_dataviz")
 
   // grab individual elements to transform later //
   const taxLine = d3.select(".taxLine");
-  const taxArea = d3.select(".taxArea");
+  // const taxArea = d3.select(".taxArea");
   const benLine = d3.select(".benefitLine");
 
+  benLine.append("text")
+  .attr("class","text-label")
+  .attr("x", (x("State benefit")+ (x.bandwidth()/2)) )
+  .attr("y", y(benefit2025 - 1000) )
+  .attr("dy", ".35em")
+  .text(`$${commafy(benefit2025)}`);
+
+  taxLine.append("text")
+  .attr("class","text-label")
+  .attr("x", (x("Lifetime Taxed Amount") + (x.bandwidth()/2)) )
+  .attr("y", y(8990 - 1000) )
+  .attr("dy", ".35em")
+  .text(`$${commafy(8990)}`);
+
   // A function that update the plot for a given xlim value
-  function updatePlot(year, endTax) {
-    var rounded = Math.ceil(endTax / 10000) * 10000 // --> 110000
+  function updatePlot(year, endTax, inflationMult) {
+
+    // which ended up being our max, tax or benefit?
+    var max_Tax = Math.ceil( endTax / 10000) * 10000;
+    var max_Ben = Math.ceil( (benefit2025 * inflationMult) / 10000) * 10000;
+    var rounded = max_Ben < max_Tax ? max_Tax : max_Ben;
+
+    // console.log(benefit2025 * inflationMult);
 
     // update Y axis if we go over 40K //
     if ((rounded > did_y_change) || ((rounded < did_y_change) && (rounded > max)) ) {
@@ -177,8 +200,14 @@ const svg = d3.select("#my_dataviz")
       benLine.selectAll("rect")
          .transition()
          .duration(1000)
-         .attr("y", y(benefit2025))
-         .attr("height", function(d) { return height - y(benefit2025); });
+         .attr("y", y(benefit2025 * inflationMult))
+         .attr("height", function(d) { return height - y(benefit2025 * inflationMult); });
+
+    benLine.selectAll("text")
+            .transition()
+            .duration(1200)
+            .attr("y", y((benefit2025 * inflationMult) - 1000) )
+            .text(`$${commafy( (benefit2025 * inflationMult).toFixed(0) )}`)
 
     } else if ((did_y_change !== max) && (rounded <= max)) {
       y.domain([0,max])
@@ -188,8 +217,14 @@ const svg = d3.select("#my_dataviz")
       benLine.selectAll("rect")
          .transition()
          .duration(1000)
-         .attr("y", y(benefit2025))
-         .attr("height", function(d) { return height - y(benefit2025); });
+         .attr("y", y(benefit2025 * inflationMult))
+         .attr("height", function(d) { return height - y(benefit2025 * inflationMult); });
+
+     benLine.selectAll("text")
+             .transition()
+             .duration(1200)
+             .attr("y", y((benefit2025 * inflationMult) - 1000) )
+             .text(`$${commafy( (benefit2025 * inflationMult).toFixed(0) )}`)
     } else {}
 
     // Update Tax Line
@@ -198,6 +233,13 @@ const svg = d3.select("#my_dataviz")
        .duration(1000)
        .attr("y", y(endTax))
        .attr("height", function(d) { return height - y(endTax); });
+
+   // Update Tax Label
+   taxLine.selectAll("text")
+           .transition()
+           .duration(1000)
+           .attr("y", y(endTax - 1000) )
+           .text(`$${commafy( endTax.toFixed(0) )}`)
 
   }
 
@@ -213,19 +255,28 @@ const svg = d3.select("#my_dataviz")
     var endYear = 2022 + timespan;
     var annualTax = salary * taxRate;
     var totalTax = annualTax * timespan;
+    var muliplier = 1;
+
+    // account for inflation?
+    if (document.querySelector('#inflation').checked) {
+        muliplier = Math.pow(inflation, timespan);
+    } else {
+        muliplier = 1;
+    }
+
+    console.log(muliplier);
 
 
-    updatePlot(endYear, totalTax);
-    document.querySelector("#lifeTax").innerText = commafy(totalTax.toFixed(2));
-    document.querySelector("#yrTax").innerText = commafy(annualTax.toFixed(2));
+    updatePlot(endYear, totalTax, muliplier);
+    document.querySelector("#lifeTax").innerText = commafy(totalTax.toFixed(0));
+    document.querySelector("#yrTax").innerText = commafy(annualTax.toFixed(0));
   }
 
 
   // Add an event listener to the button created in the html part
   // d3.select("#buttonXlim").on("input", updatePlot )
-  document.querySelectorAll(".go").forEach(el => el.addEventListener('click', () => {
+  document.querySelectorAll("#inflation").forEach(el => el.addEventListener('click', () => {
     getValues();
-
   }));
 
 // })
