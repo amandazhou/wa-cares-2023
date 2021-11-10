@@ -60,11 +60,11 @@ var sliderRetire = sliderHorizontal()
     .call(sliderRetire);
 
 var sliderSalary = sliderHorizontal()
-    .min(20000)
-    .max(200000)
+    .min(25000)
+    .max(300000)
     .step(1000)
     .width(590)
-    .tickValues([20000, 40000, 60000, 80000, 100000, 120000, 140000, 160000, 180000, 200000])
+    .tickValues([25000, 50000, 75000, 100000, 125000, 150000, 175000, 200000, 225000, 250000, 275000, 300000])
     .tickFormat(d3.format("$,~s"))
     .default(50000)
     .displayValue(false)
@@ -86,7 +86,11 @@ const taxRate = 0.0058;
 var max = 40000;
 var did_y_change = 40000;
 const benefit2025 = 36500;
-const inflation = 1.01;
+const inflation = 1.025;
+
+const wageGrowth = 1.035;
+
+var inflation_var = 1;
 
 
 
@@ -170,29 +174,32 @@ const svg = d3.select("#my_dataviz")
   benLine.append("text")
   .attr("class","text-label")
   .attr("x", (x("State benefit")+ (x.bandwidth()/2)) )
-  .attr("y", y(benefit2025 - 1000) )
-  .attr("dy", ".35em")
+  .attr("y", y(benefit2025 + 1000) )
+  .attr("dy", "0.1em")
   .text(`$${commafy(benefit2025)}`);
 
   taxLine.append("text")
   .attr("class","text-label")
   .attr("x", (x("Lifetime Taxed Amount") + (x.bandwidth()/2)) )
-  .attr("y", y(8990 - 1000) )
-  .attr("dy", ".35em")
+  .attr("y", y(8990 + 1000) )
+  .attr("dy", "0.1em")
   .text(`$${commafy(8990)}`);
 
   // A function that update the plot for a given xlim value
-  function updatePlot(year, endTax, inflationMult) {
+  function updatePlot(year, endTax, inflationMult, wageMult) {
 
     // which ended up being our max, tax or benefit?
-    var max_Tax = Math.ceil( endTax / 10000) * 10000;
+
+    var max_Tax = Math.ceil( (endTax * wageMult) / 10000) * 10000;
     var max_Ben = Math.ceil( (benefit2025 * inflationMult) / 10000) * 10000;
     var rounded = max_Ben < max_Tax ? max_Tax : max_Ben;
+
+    // console.log(inflationMult + " " +  did_y_change);
 
     // console.log(benefit2025 * inflationMult);
 
     // update Y axis if we go over 40K //
-    if ((rounded > did_y_change) || ((rounded < did_y_change) && (rounded > max)) ) {
+    if ((inflation_var !== inflationMult) || (rounded > did_y_change) || ((rounded < did_y_change) && (rounded > max)) ) {
       y.domain([0,rounded])
       yAxis.transition().duration(1000).call( d3.axisLeft(y).tickFormat( d3.format("$,d") ) );
       did_y_change = rounded;
@@ -206,7 +213,7 @@ const svg = d3.select("#my_dataviz")
     benLine.selectAll("text")
             .transition()
             .duration(1200)
-            .attr("y", y((benefit2025 * inflationMult) - 1000) )
+            .attr("y", y((benefit2025 * inflationMult) + 1000) )
             .text(`$${commafy( (benefit2025 * inflationMult).toFixed(0) )}`)
 
     } else if ((did_y_change !== max) && (rounded <= max)) {
@@ -223,23 +230,25 @@ const svg = d3.select("#my_dataviz")
      benLine.selectAll("text")
              .transition()
              .duration(1200)
-             .attr("y", y((benefit2025 * inflationMult) - 1000) )
+             .attr("y", y((benefit2025 * inflationMult) + 1000) )
              .text(`$${commafy( (benefit2025 * inflationMult).toFixed(0) )}`)
     } else {}
+
+    inflation_var = inflationMult;
 
     // Update Tax Line
     taxLine.selectAll("rect")
        .transition()
        .duration(1000)
-       .attr("y", y(endTax))
-       .attr("height", function(d) { return height - y(endTax); });
+       .attr("y", y(endTax * wageMult))
+       .attr("height", function(d) { return height - y(endTax * wageMult); });
 
    // Update Tax Label
    taxLine.selectAll("text")
            .transition()
            .duration(1000)
-           .attr("y", y(endTax - 1000) )
-           .text(`$${commafy( endTax.toFixed(0) )}`)
+           .attr("y", y((endTax * wageMult) + 1000) )
+           .text(`$${commafy( (endTax * wageMult).toFixed(0) )}`)
 
   }
 
@@ -254,22 +263,40 @@ const svg = d3.select("#my_dataviz")
     var timespan = retire - age;
     var endYear = 2022 + timespan;
     var annualTax = salary * taxRate;
+
+    annualTax = (annualTax < 0) ? 0 : annualTax;
+    annualTax = (age > retire) ? 0 : annualTax;
+
     var totalTax = annualTax * timespan;
     var muliplier = 1;
+    var wage_multiplier = 1;
 
-    // account for inflation?
+    // // account for inflation?
     if (document.querySelector('#inflation').checked) {
-        muliplier = Math.pow(inflation, timespan);
+        muliplier = timespan > 4 ? Math.pow(inflation, (timespan - 4)) : 1;
     } else {
         muliplier = 1;
     }
+    //
+    // // account for wage growth?
+    // if (document.querySelector('#wages').checked) {
+    //     wage_multiplier = Math.pow(wageGrowth, timespan);
+    // } else {
+    //     wage_multiplier = 1;
+    // }
 
-    console.log(muliplier);
+    // console.log(muliplier);
+    if (timespan < 10) {
+      document.querySelector("#exception").classList.add("show");
+    } else {
+      document.querySelector("#exception").classList.remove("show");
+    }
 
 
-    updatePlot(endYear, totalTax, muliplier);
+    updatePlot(endYear, totalTax, muliplier, wage_multiplier);
     document.querySelector("#lifeTax").innerText = commafy(totalTax.toFixed(0));
     document.querySelector("#yrTax").innerText = commafy(annualTax.toFixed(0));
+    document.querySelector("#retireYr").innerText = endYear;
   }
 
 
@@ -278,5 +305,9 @@ const svg = d3.select("#my_dataviz")
   document.querySelectorAll("#inflation").forEach(el => el.addEventListener('click', () => {
     getValues();
   }));
+  //
+  // document.querySelectorAll("#wages").forEach(el => el.addEventListener('click', () => {
+  //   getValues();
+  // }));
 
 // })

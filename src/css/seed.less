@@ -5,11 +5,19 @@
   margin: auto;
   font-size: 0px;
 
+  .data-source, .art-credit {
+    @media @mobile {margin: 0px; }
+  }
+
   #inputs {
     vertical-align: top;
     display: inline-block;
     width: 50%;
     font-size: 17px;
+
+    .inflation {
+      margin-top: 1em;
+    }
 
     @media @mobile {
       width: 100%;
@@ -29,6 +37,14 @@
       background-color: #eee;
       margin-top: 2em;
       padding: 10px;
+
+      #exception {
+        display: none;
+        font-size: 0.9em;
+    margin-top: 5px;
+    font-style: italic;
+        &.show { display: block; }
+      }
     }
   }
 
@@ -41,7 +57,7 @@
     }
 
     .text-label {
-      font-size: 13px;
+      font-size: 14px;
       // color: white;
       // font-weight: bold;
       text-anchor: middle;
