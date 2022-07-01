@@ -94,6 +94,7 @@ var inflation_var = 1;
 
 
 
+
 // set the dimensions and margins of the graph
 const margin = {top: 10, right: 30, bottom: 30, left: 60},
     width = 460 - margin.left - margin.right,
@@ -122,7 +123,7 @@ const svg = d3.select("#my_dataviz")
             .range([0, width])
             .padding(0.1);
 
-  x.domain(["Lifetime Taxed Amount","State benefit"]);
+  x.domain(["Lifetime payment",'Benefit at retirement']);
 
   const xAxis = svg.append("g")
     .attr("class", "xAxis")
@@ -145,7 +146,7 @@ const svg = d3.select("#my_dataviz")
       svg.append('g')
       .attr("class", "benefitLine")
       .append("rect")
-      .attr("x", x("State benefit"))
+      .attr("x", x('Benefit at retirement'))
       .attr("width", x.bandwidth())
       .attr("y", y(benefit2025))
       .attr("height", function(d) { return height - y(benefit2025); })
@@ -158,7 +159,7 @@ const svg = d3.select("#my_dataviz")
   svg.append('g')
   .attr("class", "taxLine")
   .append("rect")
-  .attr("x", x("Lifetime Taxed Amount"))
+  .attr("x", x("Lifetime payment"))
   .attr("width", x.bandwidth())
   .attr("y", y(8990))
   .attr("height", function(d) { return height - y(8990); })
@@ -173,14 +174,14 @@ const svg = d3.select("#my_dataviz")
 
   benLine.append("text")
   .attr("class","text-label")
-  .attr("x", (x("State benefit")+ (x.bandwidth()/2)) )
+  .attr("x", (x('Benefit at retirement')+ (x.bandwidth()/2)) )
   .attr("y", y(benefit2025 + 1000) )
   .attr("dy", "0.1em")
   .text(`$${commafy(benefit2025)}`);
 
   taxLine.append("text")
   .attr("class","text-label")
-  .attr("x", (x("Lifetime Taxed Amount") + (x.bandwidth()/2)) )
+  .attr("x", (x("Lifetime payment") + (x.bandwidth()/2)) )
   .attr("y", y(8990 + 1000) )
   .attr("dy", "0.1em")
   .text(`$${commafy(8990)}`);
@@ -189,12 +190,19 @@ const svg = d3.select("#my_dataviz")
   function updatePlot(year, endTax, inflationMult, wageMult) {
 
     // which ended up being our max, tax or benefit?
+    var benefitAmount = (year >= 2025) ? (benefit2025 * inflationMult) : 0;
+
+    document.querySelector("#estBen").innerText = commafy(benefitAmount.toFixed(0));
 
     var max_Tax = Math.ceil( (endTax * wageMult) / 10000) * 10000;
-    var max_Ben = Math.ceil( (benefit2025 * inflationMult) / 10000) * 10000;
+    var max_Ben = Math.ceil( (benefitAmount) / 10000) * 10000;
     var rounded = max_Ben < max_Tax ? max_Tax : max_Ben;
 
-    // console.log(inflationMult + " " +  did_y_change);
+
+
+    // console.log(benefitAmount);
+
+
 
     // console.log(benefit2025 * inflationMult);
 
@@ -207,14 +215,14 @@ const svg = d3.select("#my_dataviz")
       benLine.selectAll("rect")
          .transition()
          .duration(1000)
-         .attr("y", y(benefit2025 * inflationMult))
-         .attr("height", function(d) { return height - y(benefit2025 * inflationMult); });
+         .attr("y", y(benefitAmount))
+         .attr("height", function(d) { return height - y(benefitAmount); });
 
     benLine.selectAll("text")
             .transition()
             .duration(1200)
-            .attr("y", y((benefit2025 * inflationMult) + 1000) )
-            .text(`$${commafy( (benefit2025 * inflationMult).toFixed(0) )}`)
+            .attr("y", y((benefitAmount) + 1000) )
+            .text(`$${commafy( (benefitAmount).toFixed(0) )}`)
 
     } else if ((did_y_change !== max) && (rounded <= max)) {
       y.domain([0,max])
@@ -224,15 +232,29 @@ const svg = d3.select("#my_dataviz")
       benLine.selectAll("rect")
          .transition()
          .duration(1000)
-         .attr("y", y(benefit2025 * inflationMult))
-         .attr("height", function(d) { return height - y(benefit2025 * inflationMult); });
+         .attr("y", y(benefitAmount))
+         .attr("height", function(d) { return height - y(benefitAmount); });
 
      benLine.selectAll("text")
              .transition()
              .duration(1200)
-             .attr("y", y((benefit2025 * inflationMult) + 1000) )
-             .text(`$${commafy( (benefit2025 * inflationMult).toFixed(0) )}`)
-    } else {}
+             .attr("y", y((benefitAmount) + 1000) )
+             .text(`$${commafy( (benefitAmount).toFixed(0) )}`)
+    } else if (benefitAmount === 0) {
+      benLine.selectAll("rect")
+         .transition()
+         .duration(1000)
+         .attr("y", y(benefitAmount))
+         .attr("height", function(d) { return height - y(benefitAmount); });
+
+     benLine.selectAll("text")
+             .transition()
+             .duration(1200)
+             .attr("y", y((benefitAmount) + 1000) )
+             .text(`$${commafy( (benefitAmount).toFixed(0) )}`)
+
+      did_y_change = 0;
+    }
 
     inflation_var = inflationMult;
 
@@ -261,8 +283,9 @@ const svg = d3.select("#my_dataviz")
     salary = parseInt(salary.replace(/,/g, ''));
 
     var timespan = retire - age;
+    // console.log(timespan);
     var endYear = 2022 + timespan;
-    var annualTax = salary * taxRate;
+    var annualTax = timespan > 0 ? salary * taxRate : 0;
 
     annualTax = (annualTax < 0) ? 0 : annualTax;
     annualTax = (age > retire) ? 0 : annualTax;
@@ -273,10 +296,13 @@ const svg = d3.select("#my_dataviz")
 
     // // account for inflation?
     if (document.querySelector('#inflation').checked) {
-        muliplier = timespan > 4 ? Math.pow(inflation, (timespan - 4)) : 1;
+        muliplier = timespan > 3 ? Math.pow(inflation, (timespan - 3)) : 1;
+
     } else {
         muliplier = 1;
     }
+
+
     //
     // // account for wage growth?
     // if (document.querySelector('#wages').checked) {
@@ -286,10 +312,15 @@ const svg = d3.select("#my_dataviz")
     // }
 
     // console.log(muliplier);
-    if (timespan < 10) {
+    if (timespan < 3) {
+      document.querySelector("#exception2").classList.add("show");
+      document.querySelector("#exception").classList.remove("show");
+    } else if ( timespan >= 3 && timespan < 10) {
       document.querySelector("#exception").classList.add("show");
+      document.querySelector("#exception2").classList.remove("show");
     } else {
       document.querySelector("#exception").classList.remove("show");
+      document.querySelector("#exception2").classList.remove("show");
     }
 
 
