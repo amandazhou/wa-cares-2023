@@ -85,7 +85,7 @@ var sliderSalary = sliderHorizontal()
 const taxRate = 0.0058;
 var max = 40000;
 var did_y_change = 40000;
-const benefit2025 = 36500;
+const benefit2026 = 36500;
 const inflation = 1.025;
 
 const wageGrowth = 1.035;
@@ -148,8 +148,8 @@ const svg = d3.select("#my_dataviz")
       .append("rect")
       .attr("x", x('Benefit at retirement'))
       .attr("width", x.bandwidth())
-      .attr("y", y(benefit2025))
-      .attr("height", function(d) { return height - y(benefit2025); })
+      .attr("y", y(benefit2026))
+      .attr("height", function(d) { return height - y(benefit2026); })
       .style('fill', '#99d8c9');
 
 
@@ -161,8 +161,8 @@ const svg = d3.select("#my_dataviz")
   .append("rect")
   .attr("x", x("Lifetime payment"))
   .attr("width", x.bandwidth())
-  .attr("y", y(8990))
-  .attr("height", function(d) { return height - y(8990); })
+  .attr("y", y(8845))
+  .attr("height", function(d) { return height - y(8845); })
   .style('fill', '#006d2c');
 
 
@@ -175,22 +175,22 @@ const svg = d3.select("#my_dataviz")
   benLine.append("text")
   .attr("class","text-label")
   .attr("x", (x('Benefit at retirement')+ (x.bandwidth()/2)) )
-  .attr("y", y(benefit2025 + 1000) )
+  .attr("y", y(benefit2026 + 1000) )
   .attr("dy", "0.1em")
-  .text(`$${commafy(benefit2025)}`);
+  .text(`$${commafy(benefit2026)}`);
 
   taxLine.append("text")
   .attr("class","text-label")
   .attr("x", (x("Lifetime payment") + (x.bandwidth()/2)) )
-  .attr("y", y(8990 + 1000) )
+  .attr("y", y(8845 + 1000) )
   .attr("dy", "0.1em")
-  .text(`$${commafy(8990)}`);
+  .text(`$${commafy(8845)}`);
 
   // A function that update the plot for a given xlim value
   function updatePlot(year, endTax, inflationMult, wageMult) {
 
     // which ended up being our max, tax or benefit?
-    var benefitAmount = (year >= 2025) ? (benefit2025 * inflationMult) : 0;
+    var benefitAmount = (year >= 2026) ? (benefit2026 * inflationMult) : 0;
 
     document.querySelector("#estBen").innerText = commafy(benefitAmount.toFixed(0));
 
@@ -284,13 +284,20 @@ const svg = d3.select("#my_dataviz")
 
     var timespan = retire - age;
     // console.log(timespan);
-    var endYear = 2022 + timespan;
+    var endYear = 2023 + timespan;
     var annualTax = timespan > 0 ? salary * taxRate : 0;
+
+    // if (annualTax < 0 && age > retire){
+    //   annualTax = 0
+    // }
 
     annualTax = (annualTax < 0) ? 0 : annualTax;
     annualTax = (age > retire) ? 0 : annualTax;
 
-    var totalTax = annualTax * timespan;
+
+    // var totalTax = annualTax * timespan;
+
+    var totalTax = annualTax * (timespan - 1) + (annualTax / 2);
     var muliplier = 1;
     var wage_multiplier = 1;
 
@@ -302,32 +309,69 @@ const svg = d3.select("#my_dataviz")
         muliplier = 1;
     }
 
+    var benefitpartial = benefit2026 * 0.10 * timespan * muliplier
 
-    //
-    // // account for wage growth?
-    // if (document.querySelector('#wages').checked) {
-    //     wage_multiplier = Math.pow(wageGrowth, timespan);
+
+    // if (timespan < 3) {
+    //   document.querySelector("#exception2").classList.add("show");
+    //   document.querySelector("#exception").classList.remove("show");
+    // } else if ( timespan >= 3 && timespan < 10) {
+    //   document.querySelector("#exception").classList.add("show");
+    //   document.querySelector("#exception2").classList.remove("show");
     // } else {
-    //     wage_multiplier = 1;
+    //   document.querySelector("#exception").classList.remove("show");
+    //   document.querySelector("#exception2").classList.remove("show");
     // }
 
-    // console.log(muliplier);
-    if (timespan < 3) {
+
+//if you stop working within 3 years, no benefits, not a near retiree
+    if (timespan < 3 && age < 55) {
       document.querySelector("#exception2").classList.add("show");
       document.querySelector("#exception").classList.remove("show");
-    } else if ( timespan >= 3 && timespan < 10) {
+      document.querySelector("#exception3").classList.remove("show");
+      document.querySelector("#exception4").classList.remove("show");
+
+
+//if you stop working within 10 years and are not nearretiree, partial and then none
+    } else if (( timespan >= 3 && timespan < 10) && (timespan >= 3 && age < 55)) {
       document.querySelector("#exception").classList.add("show");
       document.querySelector("#exception2").classList.remove("show");
+      document.querySelector("#exception3").classList.remove("show");
+      document.querySelector("#exception4").classList.remove("show");
+
+
+//if you stop working within 10 years and nearretiree, full and then partial
+    } else if ( (timespan >= 3 && timespan < 10) && (timespan >= 3 && age >= 55)) {
+      document.querySelector("#exception3").classList.add("show");
+      document.querySelector("#exception2").classList.remove("show");
+      document.querySelector("#exception").classList.remove("show");
+      document.querySelector("#exception4").classList.remove("show");
+
+
+//if you stop working within 3 years and near retiree, none and then partial benefits
+    } else if ( timespan < 3 && age >= 55 && (timespan > 0)) {
+      document.querySelector("#exception4").classList.add("show");
+      document.querySelector("#exception").classList.remove("show");
+      document.querySelector("#exception2").classList.remove("show");
+      document.querySelector("#exception3").classList.remove("show");
+
     } else {
       document.querySelector("#exception").classList.remove("show");
       document.querySelector("#exception2").classList.remove("show");
+      document.querySelector("#exception3").classList.remove("show");
+      document.querySelector("#exception4").classList.remove("show");
+
     }
+
 
 
     updatePlot(endYear, totalTax, muliplier, wage_multiplier);
     document.querySelector("#lifeTax").innerText = commafy(totalTax.toFixed(0));
     document.querySelector("#yrTax").innerText = commafy(annualTax.toFixed(0));
     document.querySelector("#retireYr").innerText = endYear;
+    document.querySelector("#partialbenefit").innerText = commafy(benefitpartial.toFixed(0));
+    // document.querySelector("#estBen").innerText = commafy(benefitAmount.toFixed(0));
+
   }
 
 
