@@ -198,6 +198,7 @@ const svg = d3.select("#my_dataviz")
     var max_Ben = Math.ceil( (benefitAmount) / 10000) * 10000;
     var rounded = max_Ben < max_Tax ? max_Tax : max_Ben;
 
+    var benefitpartial = benefit2026 * 0.10 * (year - 2026) * inflationMult
 
 
     // console.log(benefitAmount);
@@ -355,6 +356,7 @@ const svg = d3.select("#my_dataviz")
       document.querySelector("#exception2").classList.remove("show");
       document.querySelector("#exception3").classList.remove("show");
 
+
     } else {
       document.querySelector("#exception").classList.remove("show");
       document.querySelector("#exception2").classList.remove("show");
@@ -370,7 +372,8 @@ const svg = d3.select("#my_dataviz")
     document.querySelector("#yrTax").innerText = commafy(annualTax.toFixed(0));
     document.querySelector("#retireYr").innerText = endYear;
     document.querySelector("#partialbenefit").innerText = commafy(benefitpartial.toFixed(0));
-    // document.querySelector("#estBen").innerText = commafy(benefitAmount.toFixed(0));
+    document.querySelector("#partialbenefit2").innerText = commafy(benefitpartial.toFixed(0));
+
 
   }
 
