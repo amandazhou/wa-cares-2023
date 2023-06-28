@@ -150,10 +150,10 @@ const svg = d3.select("#my_dataviz")
       .attr("width", x.bandwidth())
       .attr("y", y(benefit2026))
       .attr("height", function(d) { return height - y(benefit2026); })
-      .style('fill', '#99d8c9');
+      .style('fill', '#99A8D8');
 
 
-
+      
 
   // Lifetime tax cost //
   svg.append('g')
@@ -163,7 +163,7 @@ const svg = d3.select("#my_dataviz")
   .attr("width", x.bandwidth())
   .attr("y", y(8845))
   .attr("height", function(d) { return height - y(8845); })
-  .style('fill', '#006d2c');
+  .style('fill', '#99C8D8');
 
 
 
@@ -187,22 +187,28 @@ const svg = d3.select("#my_dataviz")
   .text(`$${commafy(8845)}`);
 
   // A function that update the plot for a given xlim value
-  function updatePlot(year, endTax, inflationMult, wageMult) {
+  function updatePlot(year, endTax, inflationMult, wageMult, inputAge) {
 
     // which ended up being our max, tax or benefit?
     var benefitAmount = (year >= 2026) ? (benefit2026 * inflationMult) : 0;
 
     document.querySelector("#estBen").innerText = commafy(benefitAmount.toFixed(0));
 
+    var benefit_Partial = benefit2026 * 0.10 * (year - 2023) * inflationMult; //new
+
+    // benefitAmount = (inputAge >= 55 && ((year - 2023) < 10)) ? benefit_Partial : benefitAmount; //new
+
     var max_Tax = Math.ceil( (endTax * wageMult) / 10000) * 10000;
     var max_Ben = Math.ceil( (benefitAmount) / 10000) * 10000;
     var rounded = max_Ben < max_Tax ? max_Tax : max_Ben;
 
-    var benefitpartial = benefit2026 * 0.10 * (year - 2026) * inflationMult
+    // console.log("year:" +  year); //new
+    // console.log("inflationMult:" +  inflationMult); //new
+    // console.log("partial benefit:" +  benefit_Partial); //new
 
+    // console.log(benefitAmount)
 
-    // console.log(benefitAmount);
-
+  
 
 
     // console.log(benefit2025 * inflationMult);
@@ -287,6 +293,7 @@ const svg = d3.select("#my_dataviz")
     // console.log(timespan);
     var endYear = 2023 + timespan;
     var annualTax = timespan > 0 ? salary * taxRate : 0;
+    var monthTax = annualTax/12
 
     // if (annualTax < 0 && age > retire){
     //   annualTax = 0
@@ -325,8 +332,10 @@ const svg = d3.select("#my_dataviz")
     // }
 
 
+//add timespan below zero clause
+
 //if you stop working within 3 years, no benefits, not a near retiree
-    if (timespan < 3 && age < 55) {
+    if (timespan < 3 && age < 55 && (timespan > 0)) {
       document.querySelector("#exception2").classList.add("show");
       document.querySelector("#exception").classList.remove("show");
       document.querySelector("#exception3").classList.remove("show");
@@ -367,14 +376,15 @@ const svg = d3.select("#my_dataviz")
 
 
 
-    updatePlot(endYear, totalTax, muliplier, wage_multiplier);
+    updatePlot(endYear, totalTax, muliplier, wage_multiplier, age);
     document.querySelector("#lifeTax").innerText = commafy(totalTax.toFixed(0));
     document.querySelector("#yrTax").innerText = commafy(annualTax.toFixed(0));
     document.querySelector("#retireYr").innerText = endYear;
     document.querySelector("#partialbenefit").innerText = commafy(benefitpartial.toFixed(0));
     document.querySelector("#partialbenefit2").innerText = commafy(benefitpartial.toFixed(0));
+    document.querySelector("#mnthTax").innerText = commafy(monthTax.toFixed(0));
 
-
+    
   }
 
 
@@ -382,6 +392,7 @@ const svg = d3.select("#my_dataviz")
   // d3.select("#buttonXlim").on("input", updatePlot )
   document.querySelectorAll("#inflation").forEach(el => el.addEventListener('click', () => {
     getValues();
+
   }));
   //
   // document.querySelectorAll("#wages").forEach(el => el.addEventListener('click', () => {
